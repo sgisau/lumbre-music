@@ -1,67 +1,80 @@
-# Payload Blank Template
+# Lumbre Music — sitio oficial y panel administrativo
 
-This template comes configured with the bare minimum to get started on anything you need.
+Sitio del sello con roster, lanzamientos, videos, eventos y tienda, más un panel privado en `/admin` para editar todo sin tocar código.
 
-## Quick start
+Hecho con [Next.js](https://nextjs.org) y [Payload CMS](https://payloadcms.com) sobre PostgreSQL.
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+## Qué se edita desde el panel
 
-## Quick Start - local setup
+Entra en `https://tu-dominio/admin` (también hay un enlace discreto en el pie de página: “Acceso administradores”).
 
-To spin up this template locally, follow these steps:
+| Sección del panel | Qué puedes hacer |
+| --- | --- |
+| **Artistas** | Añadir, editar, ocultar o borrar artistas. Fotos (tarjeta y cabecera), bio, enlaces, redes, correo de booking y orden. |
+| **Artistas → pestaña Oyentes** | Actualizar los oyentes mensuales. La fecha “Actualizado el” se pone sola al cambiar la cifra. |
+| **Lanzamientos** | Sencillos, EPs y álbumes con portada, canciones, enlaces y pre-save. Se pueden dejar en borrador o programar su publicación. |
+| **Videos** | Pegar un enlace de YouTube y elegir si es video (horizontal) o clip (vertical). |
+| **Eventos** | Fechas con ciudad, lugar, enlace de boletos y estado (disponible, pocos, agotado, cancelado). Las pasadas se ocultan solas. |
+| **Productos** | Merch con fotos, precio, tallas, etiquetas y **beneficio fan opcional** por producto. |
+| **Página de inicio** | Lanzamiento del momento, imagen o video de portada, drop de tienda y el **orden y visibilidad de cada bloque**. |
+| **Ajustes del sitio** | **Logo principal, logo para fondo claro y favicon**, aviso superior, redes, correos de contacto, políticas de envío y devoluciones y SEO. |
+| **Página Nosotros** | Texto e imagen de la página. |
+| **Administradores** | Alta y baja de usuarios y sus roles (solo superadministrador). |
 
-### Clone
+### Roles
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+| Rol | Puede editar |
+| --- | --- |
+| Superadministrador | Todo, incluidos usuarios y roles. |
+| Contenido | Artistas, lanzamientos, videos, eventos, home, ajustes y Nosotros. |
+| Tienda | Productos y el bloque de tienda de la home. |
+| Eventos | Eventos. |
 
-### Development
+La **primera persona que se registre** en `/admin` queda como superadministrador. Hazlo en cuanto publiques el sitio.
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+## Trabajar en local
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+Requisitos: Node.js 22 y PostgreSQL 16.
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+```bash
+cp .env.example .env      # rellena DATABASE_URL y PAYLOAD_SECRET
+npm install
+npm run dev               # http://localhost:3000 y http://localhost:3000/admin
+```
 
-#### Docker (Optional)
+Contenido de demostración, solo para probar (todo dice “Artista 01”, “Producto 01”…):
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+```bash
+npm run seed:demo
+```
 
-To do so, follow these steps:
+## Publicar en Vercel
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+1. En [vercel.com](https://vercel.com) → **Add New → Project** e importa este repositorio.
+2. En **Storage** crea una base de datos **Postgres (Neon)** y conéctala al proyecto. Copia su cadena de conexión en la variable `DATABASE_URL`.
+3. En **Storage** crea un **Blob store** y conéctalo. Vercel añade `BLOB_READ_WRITE_TOKEN` (sin esto las imágenes subidas se pierden en cada despliegue).
+4. En **Settings → Environment Variables** añade:
+   - `PAYLOAD_SECRET`: una cadena larga y aleatoria.
+   - `NEXT_PUBLIC_SITE_URL`: la dirección final, p. ej. `https://lumbremusic.com`.
+   - `CRON_SECRET`: otra cadena aleatoria.
+   - `SITE_TIMEZONE`: la zona horaria de las fechas de eventos (por defecto `America/Mexico_City`).
+5. **Deploy**. Las tablas de la base de datos se crean solas al arrancar.
+6. Entra en `/admin` y crea tu usuario de superadministrador.
+7. En **Settings → Domains** conecta el dominio de Lumbre.
 
-## How it works
+**Lanzamientos programados:** el cron de `vercel.json` los publica una vez al día (límite del plan gratuito de Vercel). Con el plan Pro puedes cambiarlo a cada 5 minutos (`*/5 * * * *`).
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+## Cambios en la estructura de datos
 
-### Collections
+Si se añaden campos o colecciones en `src/collections` o `src/globals`, genera una migración antes de publicar:
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+```bash
+npm run payload migrate:create nombre-del-cambio
+npm run generate:types
+```
 
-- #### Users (Authentication)
+## Pendiente
 
-  Users are auth-enabled collections that have access to the admin panel.
-
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/3.x/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Media
-
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+- **Carrito y pago con Shopify (fase 4).** Hoy el botón “Comprar” de cada producto lleva al “Enlace de compra” que pongas en el panel; si está vacío dice “Próximamente”.
+- **Correo para recuperar contraseñas.** Falta conectar un servicio de envío de correo (p. ej. Resend). Mientras tanto, el superadministrador puede cambiar la contraseña de cualquier usuario desde el panel.
+- **Newsletter.** El bloque aparece cuando pegas en Ajustes del sitio el enlace del formulario de tu servicio de correo.

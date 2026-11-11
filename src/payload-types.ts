@@ -67,35 +67,61 @@ export interface Config {
   };
   blocks: {};
   collections: {
-    users: User;
+    artists: Artist;
+    releases: Release;
+    videos: Video;
+    events: Event;
+    products: Product;
     media: Media;
+    users: User;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
   collectionsJoins: {};
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
+    artists: ArtistsSelect<false> | ArtistsSelect<true>;
+    releases: ReleasesSelect<false> | ReleasesSelect<true>;
+    videos: VideosSelect<false> | VideosSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'home-page': HomePage;
+    'site-settings': SiteSetting;
+    'about-page': AboutPage;
+  };
+  globalsSelect: {
+    'home-page': HomePageSelect<false> | HomePageSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
   user: User;
   jobs: {
-    tasks: unknown;
+    tasks: {
+      schedulePublish: TaskSchedulePublish;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -118,11 +144,292 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Roster firmado. El orden decide cómo aparecen en el sitio (menor número primero).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "artists".
+ */
+export interface Artist {
+  id: number;
+  name: string;
+  /**
+   * Se usa en la grilla de artistas.
+   */
+  photo?: (number | null) | Media;
+  /**
+   * Opcional. Si no hay, se usa la foto de tarjeta.
+   */
+  headerPhoto?: (number | null) | Media;
+  bio?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Cifra de Spotify. Déjalo vacío para no mostrarla.
+   */
+  monthlyListeners?: number | null;
+  /**
+   * Se pone solo al cambiar la cifra.
+   */
+  listenersUpdatedAt?: string | null;
+  spotifyUrl?: string | null;
+  appleMusicUrl?: string | null;
+  youtubeUrl?: string | null;
+  socials?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  bookingEmail?: string | null;
+  /**
+   * Se genera solo a partir del nombre. Cámbialo solo si sabes lo que haces.
+   */
+  slug?: string | null;
+  visible?: boolean | null;
+  /**
+   * Menor número aparece primero.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Fotos de artistas, portadas, logos y fotos de producto.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Describe la imagen en pocas palabras (accesibilidad y Google).
+   */
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumb?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * Sencillos, EPs y álbumes. Puedes dejarlos en borrador o programar su publicación.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "releases".
+ */
+export interface Release {
+  id: number;
+  title: string;
+  type: 'single' | 'ep' | 'album' | 'mixtape';
+  releaseDate: string;
+  /**
+   * Opcional, p. ej. LBR-001.
+   */
+  catalogNumber?: string | null;
+  artists: (number | Artist)[];
+  cover?: (number | null) | Media;
+  tracklist?:
+    | {
+        title: string;
+        id?: string | null;
+      }[]
+    | null;
+  spotifyUrl?: string | null;
+  appleMusicUrl?: string | null;
+  youtubeUrl?: string | null;
+  otherLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Se muestra mientras la fecha de salida no haya llegado.
+   */
+  presaveUrl?: string | null;
+  credits?: string | null;
+  /**
+   * Se genera solo a partir del nombre. Cámbialo solo si sabes lo que haces.
+   */
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Videos de YouTube (horizontales) y clips verticales. Pega el enlace de YouTube.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  title: string;
+  /**
+   * Funciona con enlaces de video, de youtu.be y de Shorts.
+   */
+  youtubeUrl: string;
+  kind: 'video' | 'clip';
+  publishedAt?: string | null;
+  artists?: (number | Artist)[] | null;
+  release?: (number | null) | Release;
+  featured?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Conciertos y fechas. Las fechas pasadas se ocultan solas del sitio.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  date: string;
+  city: string;
+  country?: string | null;
+  venue?: string | null;
+  artists?: (number | Artist)[] | null;
+  ticketUrl?: string | null;
+  status: 'available' | 'few' | 'soldout' | 'cancelled';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Merch que se muestra en el sitio. Cuando Shopify esté conectado, precio, stock y pago vendrán de Shopify; aquí quedan las fotos, el beneficio fan y lo que se destaca.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  title: string;
+  /**
+   * La primera es la principal. Recomendado: una plana y una puesta.
+   */
+  images?: (number | Media)[] | null;
+  price?: number | null;
+  /**
+   * Opcional. Muestra el precio tachado.
+   */
+  compareAtPrice?: number | null;
+  currency?: string | null;
+  artist?: (number | null) | Artist;
+  /**
+   * P. ej. “Drop 01”.
+   */
+  drop?: string | null;
+  badges?: ('new' | 'limited' | 'soldout')[] | null;
+  sizes?:
+    | {
+        label: string;
+        available?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Opcional. Actívalo solo en los productos que lo tengan.
+   */
+  fanBenefit?: {
+    enabled?: boolean | null;
+    type?: ('signature' | 'access' | 'extra' | 'other') | null;
+    text?: string | null;
+    /**
+     * Déjalo vacío si no hay límite.
+     */
+    limit?: number | null;
+  };
+  /**
+   * Mientras no esté el carrito de Shopify, el botón “Comprar” lleva aquí (p. ej. el producto en tu tienda de Shopify). Vacío = “Próximamente”.
+   */
+  buyUrl?: string | null;
+  /**
+   * Para la conexión con Shopify más adelante.
+   */
+  shopifyHandle?: string | null;
+  /**
+   * Se genera solo a partir del nombre. Cámbialo solo si sabes lo que haces.
+   */
+  slug?: string | null;
+  visible?: boolean | null;
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Personas con acceso al panel. Solo el superadministrador puede crear usuarios y cambiar roles.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  name: string;
+  /**
+   * Superadministrador: todo. Contenido: artistas, lanzamientos, videos, home y ajustes. Tienda: productos. Eventos: fechas.
+   */
+  role: 'superadmin' | 'contenido' | 'tienda' | 'eventos';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -145,29 +452,10 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: string;
-  alt: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -181,23 +469,135 @@ export interface PayloadKv {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'schedulePublish';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'schedulePublish') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
-        relationTo: 'users';
-        value: string | User;
+        relationTo: 'artists';
+        value: number | Artist;
+      } | null)
+    | ({
+        relationTo: 'releases';
+        value: number | Release;
+      } | null)
+    | ({
+        relationTo: 'videos';
+        value: number | Video;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -207,10 +607,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -230,7 +630,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -238,9 +638,192 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "artists_select".
+ */
+export interface ArtistsSelect<T extends boolean = true> {
+  name?: T;
+  photo?: T;
+  headerPhoto?: T;
+  bio?: T;
+  monthlyListeners?: T;
+  listenersUpdatedAt?: T;
+  spotifyUrl?: T;
+  appleMusicUrl?: T;
+  youtubeUrl?: T;
+  socials?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  bookingEmail?: T;
+  slug?: T;
+  visible?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "releases_select".
+ */
+export interface ReleasesSelect<T extends boolean = true> {
+  title?: T;
+  type?: T;
+  releaseDate?: T;
+  catalogNumber?: T;
+  artists?: T;
+  cover?: T;
+  tracklist?:
+    | T
+    | {
+        title?: T;
+        id?: T;
+      };
+  spotifyUrl?: T;
+  appleMusicUrl?: T;
+  youtubeUrl?: T;
+  otherLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  presaveUrl?: T;
+  credits?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos_select".
+ */
+export interface VideosSelect<T extends boolean = true> {
+  title?: T;
+  youtubeUrl?: T;
+  kind?: T;
+  publishedAt?: T;
+  artists?: T;
+  release?: T;
+  featured?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  date?: T;
+  city?: T;
+  country?: T;
+  venue?: T;
+  artists?: T;
+  ticketUrl?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  title?: T;
+  images?: T;
+  price?: T;
+  compareAtPrice?: T;
+  currency?: T;
+  artist?: T;
+  drop?: T;
+  badges?: T;
+  sizes?:
+    | T
+    | {
+        label?: T;
+        available?: T;
+        id?: T;
+      };
+  description?: T;
+  fanBenefit?:
+    | T
+    | {
+        enabled?: T;
+        type?: T;
+        text?: T;
+        limit?: T;
+      };
+  buyUrl?: T;
+  shopifyHandle?: T;
+  slug?: T;
+  visible?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumb?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        hero?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -261,29 +844,42 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
- */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -318,6 +914,230 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Qué se ve en la home y en qué orden.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page".
+ */
+export interface HomePage {
+  id: number;
+  /**
+   * Vacío = el lanzamiento publicado más reciente.
+   */
+  heroRelease?: (number | null) | Release;
+  /**
+   * Horizontal. Vacío = la portada del lanzamiento.
+   */
+  heroImage?: (number | null) | Media;
+  heroEyebrow?: string | null;
+  heroShopUrl?: string | null;
+  /**
+   * Vacío = el mismo de la portada.
+   */
+  featuredRelease?: (number | null) | Release;
+  /**
+   * Título del bloque de tienda.
+   */
+  dropTitle?: string | null;
+  /**
+   * Vacío = los primeros productos visibles.
+   */
+  dropProducts?: (number | Product)[] | null;
+  /**
+   * Arrastra para cambiar el orden. Desmarca “Visible” para ocultar un bloque.
+   */
+  blocks?:
+    | {
+        block: 'featured' | 'roster' | 'releases' | 'drop' | 'videos' | 'events' | 'newsletter';
+        visible?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Logos, aviso superior, redes y correos de contacto.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  /**
+   * De preferencia SVG o PNG transparente, en blanco o hueso.
+   */
+  logo?: (number | null) | Media;
+  /**
+   * Versión en negro para bloques blancos. Opcional.
+   */
+  logoDark?: (number | null) | Media;
+  /**
+   * Cuadrado, mínimo 512 × 512 px.
+   */
+  favicon?: (number | null) | Media;
+  siteName?: string | null;
+  /**
+   * Aparece en el pie de página.
+   */
+  tagline?: string | null;
+  announcementEnabled?: boolean | null;
+  /**
+   * P. ej. drop actual o condición de envío.
+   */
+  announcementText?: string | null;
+  announcementUrl?: string | null;
+  socials?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Formulario de tu servicio de correo (Klaviyo, Mailchimp, Shopify Email…). Vacío = no se muestra el bloque de newsletter.
+   */
+  newsletterUrl?: string | null;
+  bookingEmail?: string | null;
+  pressEmail?: string | null;
+  contactEmail?: string | null;
+  /**
+   * Vacío = no se muestra la sección de demos.
+   */
+  demosEmail?: string | null;
+  /**
+   * Se muestra en la tienda y en cada producto.
+   */
+  shippingPolicy?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  returnsPolicy?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  seoDescription?: string | null;
+  shareImage?: (number | null) | Media;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page".
+ */
+export interface AboutPage {
+  id: number;
+  title?: string | null;
+  image?: (number | null) | Media;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page_select".
+ */
+export interface HomePageSelect<T extends boolean = true> {
+  heroRelease?: T;
+  heroImage?: T;
+  heroEyebrow?: T;
+  heroShopUrl?: T;
+  featuredRelease?: T;
+  dropTitle?: T;
+  dropProducts?: T;
+  blocks?:
+    | T
+    | {
+        block?: T;
+        visible?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  logo?: T;
+  logoDark?: T;
+  favicon?: T;
+  siteName?: T;
+  tagline?: T;
+  announcementEnabled?: T;
+  announcementText?: T;
+  announcementUrl?: T;
+  socials?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  newsletterUrl?: T;
+  bookingEmail?: T;
+  pressEmail?: T;
+  contactEmail?: T;
+  demosEmail?: T;
+  shippingPolicy?: T;
+  returnsPolicy?: T;
+  seoDescription?: T;
+  shareImage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page_select".
+ */
+export interface AboutPageSelect<T extends boolean = true> {
+  title?: T;
+  image?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
@@ -326,6 +1146,26 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSchedulePublish".
+ */
+export interface TaskSchedulePublish {
+  input: {
+    type?: ('publish' | 'unpublish') | null;
+    locale?: string | null;
+    doc?: {
+      relationTo: 'releases';
+      value: number | Release;
+    } | null;
+    global?: string | null;
+    user?: {
+      relationTo: 'users';
+      value: number | User;
+    } | null;
+  };
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

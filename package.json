@@ -1,7 +1,7 @@
 {
   "name": "lumbre-music",
   "version": "1.0.0",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Sitio oficial y panel administrativo de Lumbre Music",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -13,13 +13,13 @@
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "test": "pnpm run test:int && pnpm run test:e2e",
-    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "seed:demo": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-demo.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.93.0",
     "@payloadcms/next": "3.93.0",
     "@payloadcms/richtext-lexical": "3.93.0",
+    "@payloadcms/storage-vercel-blob": "^3.93.0",
     "@payloadcms/ui": "3.93.0",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
@@ -28,8 +28,7 @@
     "payload": "3.93.0",
     "react": "19.2.9",
     "react-dom": "19.2.9",
-    "sharp": "0.35.4",
-    "@payloadcms/db-postgres": "3.93.0"
+    "sharp": "0.35.4"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
