@@ -24,6 +24,22 @@ const dirname = path.dirname(filename)
 
 const blobToken = process.env.BLOB_READ_WRITE_TOKEN
 
+// Vercel + Neon puede crear la variable con distintos nombres según cómo se conecte.
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.DATABASE_POSTGRES_URL ||
+  process.env.STORAGE_DATABASE_URL ||
+  process.env.STORAGE_URL ||
+  ''
+
+if (!databaseUrl && process.env.NODE_ENV === 'production') {
+  console.error('[Lumbre] Falta la conexión a la base de datos: define DATABASE_URL en Vercel.')
+}
+if (!process.env.PAYLOAD_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('[Lumbre] Falta PAYLOAD_SECRET en las variables de entorno de Vercel.')
+}
+
 export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_SITE_URL || '',
   admin: {
@@ -49,7 +65,7 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URL || '',
+      connectionString: databaseUrl,
     },
     // En producción las tablas se crean/actualizan con las migraciones al arrancar.
     prodMigrations: migrations,
